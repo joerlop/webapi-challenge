@@ -133,26 +133,41 @@ router.put("/:id/actions/:actionId", (req, res) => {
   const id = req.params.actionId;
   const updatedAction = req.body;
   req.body.project_id = req.params.id;
+  const projectId = req.params.id;
 
   if (!updatedAction.notes || !updatedAction.description) {
     res.status(400).json({
       errorMessage: "Please provide notes and description for the action."
     });
   } else {
-    actionsDb.update(id, updatedAction)
-      .then(updatedAction => {
-        if (updatedAction) {
-          res.status(200).json(updatedAction);
-        } else
-          res.status(404).json({
-            message: "The action with the specified ID does not exist."
+    db.get(projectId)
+    .then(project => {
+      if (project) {
+        actionsDb.update(id, updatedAction)
+        .then(updatedAction => {
+          if (updatedAction) {
+            res.status(200).json(updatedAction);
+          } else
+            res.status(404).json({
+              message: "The action with the specified ID does not exist."
+            });
+        })
+        .catch(err => {
+          res.status(500).json({
+            error: "There was an error while updating the action in the database"
           });
-      })
-      .catch(err => {
-        res.status(500).json({
-          error: "There was an error while updating the action in the database"
         });
-      });
+      } 
+      else
+        res
+          .status(404)
+          .json({ message: "The project with the specified ID does not exist." });
+    })
+    .catch(err => {
+      res
+        .status(500)
+        .json({ error: "The project information could not be retrieved." });
+    });
   }
 });
 
@@ -178,22 +193,36 @@ router.delete("/:id", (req, res) => {
 
 router.delete("/:id/actions/:actionId", (req, res) => {
   const id = req.params.actionId;
-  const action = req.body;
+  const projectId = req.params.id;
 
-  actionsDb.remove(id)
-    .then(deleted => {
-      if (deleted) {
-        res.status(200).json(deleted);
-      } else
-        res.status(404).json({
-          message: "The action with the specified ID does not exist."
+  db.get(projectId)
+  .then(project => {
+    if (project) {
+      actionsDb.remove(id)
+      .then(deleted => {
+        if (deleted) {
+          res.status(200).json(deleted);
+        } else
+          res.status(404).json({
+            message: "The action with the specified ID does not exist."
+          });
+      })
+      .catch(err => {
+        res.status(500).json({
+          error: "There was an error while removing the action from the database"
         });
-    })
-    .catch(err => {
-      res.status(500).json({
-        error: "There was an error while removing the action from the database"
       });
-    });
+    } 
+    else
+      res
+        .status(404)
+        .json({ message: "The project with the specified ID does not exist." });
+  })
+  .catch(err => {
+    res
+      .status(500)
+      .json({ error: "The project information could not be retrieved." });
+  });
 });
 
 module.exports = router;
